@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
 export const Landing = () => {
+  const navigate = useNavigate();
   return (
     <>
       <nav className="fixed top-0 w-full z-50 bg-[#0B0E14]/80 backdrop-blur-md shadow-[0_8px_32px_0_rgba(138,43,226,0.1)]">
@@ -12,8 +14,8 @@ export const Landing = () => {
             <span className="text-2xl font-bold text-white tracking-widest font-headline">EduNova</span>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="tertiary">Log In</Button>
-            <Button variant="primary">Get Started</Button>
+            <Button variant="tertiary" onClick={() => navigate('/dashboard')}>Log In</Button>
+            <Button variant="primary" onClick={() => navigate('/onboarding')}>Get Started</Button>
           </div>
         </div>
       </nav>
@@ -36,8 +38,8 @@ export const Landing = () => {
               Navigate the vast expanse of knowledge with a celestial guide. EduNova tailors every lesson, problem, and path to your unique cognitive signature.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Button variant="primary" className="text-lg px-10 py-4">Get Started</Button>
-              <Button variant="secondary">Log In</Button>
+              <Button variant="primary" className="text-lg px-10 py-4" onClick={() => navigate('/onboarding')}>Get Started</Button>
+              <Button variant="secondary" onClick={() => navigate('/dashboard')}>Log In</Button>
             </div>
           </div>
         </section>
