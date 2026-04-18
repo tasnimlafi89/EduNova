@@ -64,12 +64,31 @@ app.post('/api/exercises/generate', async (req, res) => {
 });
 
 app.post('/api/exercises/evaluate', async (req, res) => {
-  const { question, studentAnswer, topic, level } = req.body;
+  const { question, studentAnswer, topic, level, studentId } = req.body;
   if (!question || !studentAnswer) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
   const evaluation = await aiService.evaluateAnswer(question, studentAnswer, topic, level);
+  
+  // Track progress
+  if (studentId && mockProfiles[studentId]) {
+    const profile = mockProfiles[studentId];
+    let subject = profile.subjects.find(s => s.id === topic);
+    if (!subject) {
+      subject = { id: topic, name: topic.replace('-', ' ').toUpperCase(), level: 1, masteryScore: 0 };
+      profile.subjects.push(subject);
+    }
+    
+    // Update mastery score if correct
+    if (evaluation.isCorrect) {
+      subject.masteryScore = Math.min(100, subject.masteryScore + 10);
+      if (subject.masteryScore === 100) {
+        subject.level = Math.min(5, subject.level + 1); // Max level 5
+      }
+    }
+  }
+
   res.json(evaluation);
 });
 

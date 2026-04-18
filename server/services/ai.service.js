@@ -56,7 +56,7 @@ export const aiService = {
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         temperature: 0.3,
-        system: "You are an AI grader. Evaluate the student's answer. Return ONLY valid JSON: { \"score\": <number 0-100>, \"feedback\": \"<detailed feedback>\", \"correction\": \"<suggested correction>\" }. Do not include markdown.",
+        system: "You are an AI grader. Evaluate the student's answer. Verify if the answer relates to the topic. Return ONLY valid JSON: { \"score\": <number 0-100>, \"isCorrect\": <boolean>, \"isRelevant\": <boolean>, \"feedback\": \"<detailed feedback>\", \"correction\": \"<suggested correction>\" }. Do not include markdown.",
         messages: [
           {
             role: 'user',
@@ -71,6 +71,8 @@ export const aiService = {
       console.error('Error evaluating answer:', error);
       return {
         score: 85,
+        isCorrect: true,
+        isRelevant: true,
         feedback: "Good attempt! You captured the main idea.",
         correction: "Make sure to also mention..."
       };

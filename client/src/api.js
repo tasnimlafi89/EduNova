@@ -30,11 +30,11 @@ export const api = {
     return res.json();
   },
 
-  evaluateAnswer: async (question, studentAnswer, topic, level) => {
+  evaluateAnswer: async (question, studentAnswer, topic, level, studentId) => {
     const res = await fetch(`${API_URL}/exercises/evaluate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, studentAnswer, topic, level })
+      body: JSON.stringify({ question, studentAnswer, topic, level, studentId })
     });
     return res.json();
   },
