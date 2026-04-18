@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#47d6ff",
+                    "secondary": "#a5e7ff",
+                    "surface": "#10131a",
+                    "inverse-surface": "#e1e2eb",
+                    "on-surface-variant": "#cfc2d7",
+                    "on-tertiary-container": "#ffdaba",
+                    "on-tertiary-fixed": "#2d1600",
+                    "primary": "#dcb8ff",
+                    "surface-variant": "#32353c",
+                    "on-primary-container": "#eed9ff",
+                    "surface-container-low": "#191c22",
+                    "tertiary-fixed-dim": "#ffb873",
+                    "surface-dim": "#10131a",
+                    "on-secondary": "#003543",
+                    "surface-container-highest": "#32353c",
+                    "primary-fixed": "#efdbff",
+                    "on-secondary-fixed": "#001f28",
+                    "error": "#ffb4ab",
+                    "tertiary": "#ffb873",
+                    "on-primary-fixed-variant": "#6700b5",
+                    "on-tertiary-fixed-variant": "#6a3b00",
+                    "on-secondary-fixed-variant": "#004e60",
+                    "outline-variant": "#4c4354",
+                    "surface-tint": "#dcb8ff",
+                    "on-surface": "#e1e2eb",
+                    "tertiary-fixed": "#ffdcbf",
+                    "on-background": "#e1e2eb",
+                    "secondary-container": "#00d2ff",
+                    "outline": "#988ca0",
+                    "surface-container": "#1d2026",
+                    "primary-container": "#8a2be2",
+                    "tertiary-container": "#935400",
+                    "error-container": "#93000a",
+                    "on-primary-fixed": "#2c0051",
+                    "on-error": "#690005",
+                    "secondary-fixed": "#b6ebff",
+                    "inverse-primary": "#8422dc",
+                    "surface-bright": "#363940",
+                    "surface-container-lowest": "#0b0e14",
+                    "primary-fixed-dim": "#dcb8ff",
+                    "on-primary": "#480081",
+                    "on-secondary-container": "#00566a",
+                    "on-tertiary": "#4b2800",
+                    "on-error-container": "#ffdad6",
+                    "background": "#10131a",
+                    "inverse-on-surface": "#2e3037",
+                    "surface-container-high": "#272a31"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": ["Space Grotesk"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(25, 28, 34, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .nebula-mesh {
+            background-image: radial-gradient(at 0% 0%, #2c0051 0px, transparent 50%),
+                              radial-gradient(at 100% 0%, #001f28 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, #4b2800 0px, transparent 50%),
+                              radial-gradient(at 0% 100%, #10131a 0px, transparent 50%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest text-on-surface font-body selection:bg-primary-container selection:text-white overflow-x-hidden">
+<!-- TopAppBar -->
+<nav class="fixed top-0 w-full z-50 bg-[#0B0E14]/80 backdrop-blur-md shadow-[0_8px_32px_0_rgba(138,43,226,0.1)]">
+<div class="max-w-7xl mx-auto flex justify-between items-center px-8 h-20">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+<span class="text-2xl font-bold text-white tracking-widest font-headline">EduNova</span>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-[#dcb8ff] font-bold border-b-2 border-[#8A2BE2] pb-1 font-headline" href="#">Curriculum</a>
+<a class="text-slate-400 font-medium hover:text-white hover:bg-white/5 transition-all duration-300 rounded-lg px-3 py-1 font-headline" href="#">Tutor AI</a>
+<a class="text-slate-400 font-medium hover:text-white hover:bg-white/5 transition-all duration-300 rounded-lg px-3 py-1 font-headline" href="#">Nebula Community</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#dcb8ff] font-medium px-4 py-2 hover:text-white transition-colors">Log In</button>
+<button class="bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold px-6 py-2.5 rounded-full shadow-[0_0_15px_rgba(138,43,226,0.4)] active:scale-95 transition-all hover:shadow-[0_0_25px_rgba(138,43,226,0.6)]">Get Started</button>
+</div>
+</div>
+</nav>
+<main class="pt-20">
+<!-- Hero Section -->
+<section class="relative min-h-[795px] flex items-center justify-center overflow-hidden px-8">
+<div class="absolute inset-0 nebula-mesh opacity-40"></div>
+<div class="absolute top-1/4 -left-20 w-96 h-96 bg-primary-container/20 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-secondary-container/10 rounded-full blur-[120px]"></div>
+<div class="relative z-10 max-w-5xl text-center">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container border border-outline-variant/30 text-secondary-fixed-dim text-xs font-semibold tracking-wider uppercase mb-8">
+<span class="material-symbols-outlined text-sm">auto_awesome</span>
+                    The Future of Learning is Here
+                </div>
+<h1 class="font-headline text-5xl md:text-8xl font-bold tracking-tight text-white mb-8 leading-[1.1]">
+                    Autonomous <br/>
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary-fixed-dim to-primary">AI-Driven Learning</span>
+</h1>
+<p class="text-on-surface-variant text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
+                    Navigate the vast expanse of knowledge with a celestial guide. EduNova tailors every lesson, problem, and path to your unique cognitive signature.
+                </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+<button class="group relative px-10 py-4 bg-gradient-to-br from-primary to-primary-container rounded-full text-on-primary font-bold text-lg shadow-[0_0_20px_rgba(220,184,255,0.3)] transition-all hover:shadow-[0_0_40px_rgba(220,184,255,0.5)] active:scale-95">
+                        Get Started
+                        <div class="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</button>
+<button class="px-10 py-4 rounded-full border border-secondary-fixed-dim/30 text-secondary-fixed-dim font-bold text-lg hover:bg-secondary-fixed-dim/10 transition-all active:scale-95 shadow-[0_0_15px_rgba(71,214,255,0.1)] hover:shadow-[0_0_30px_rgba(71,214,255,0.2)]">
+                        Log In
+                    </button>
+</div>
+</div>
+</section>
+<!-- Personalized Learning Path (Bento Grid) -->
+<section class="py-24 px-8 max-w-7xl mx-auto">
+<div class="mb-16">
+<h2 class="font-headline text-4xl md:text-5xl font-bold text-white mb-4">Personalized Learning Path</h2>
+<p class="text-on-surface-variant text-lg max-w-xl">Our AI cartographers map your progress in real-time, adapting the difficulty and content delivery to keep you in the flow state.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[600px]">
+<div class="md:col-span-8 glass-card rounded-3xl p-8 border border-outline-variant/10 flex flex-col justify-between group overflow-hidden relative">
+<div class="relative z-10">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary text-3xl">route</span>
+</div>
+<h3 class="font-headline text-3xl font-bold text-white mb-4">Adaptive Trajectories</h3>
+<p class="text-on-surface-variant text-lg max-w-md">The path shifts as you learn. Master a concept, and the next star system unlocks. Struggle, and the AI provides supportive detours.</p>
+</div>
+<div class="mt-8 relative z-10">
+<div class="flex gap-2">
+<span class="px-4 py-1 rounded-full bg-secondary-container/20 text-secondary text-xs font-bold uppercase tracking-widest">Cognitive Mapping</span>
+<span class="px-4 py-1 rounded-full bg-tertiary/10 text-tertiary text-xs font-bold uppercase tracking-widest">Real-time Pivot</span>
+</div>
+</div>
+<img class="absolute bottom-0 right-0 w-2/3 h-2/3 object-contain opacity-40 group-hover:scale-110 transition-transform duration-700" data-alt="Futuristic digital neural network visualization with glowing nodes and cosmic purple energy threads connecting points in a dark void" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAugYG25Tf55qDUK_GD0SSYBa1iEaXxGgF52jfI9J-V5RnSf19HApbbWxX7wi1-8Wm3C8GBp2qAYbpRyznIOfrsA3XrW61y8xoyXAHZf59h7LOOwzs_zHMbyUkCqjyeeIoIN-MJJsELwgEshmOUZaZIapMR3STZUec0Vl4_6UxmrSqm_lHViLafoN1I8C5Z9cc1GUO1qQeC1myHMVOsqbrlPJrg0CxZ8ARuoX7YE6bgdZ39a4gBCE2fIcWztLIUB6XgTxhgfY46n2g"/>
+</div>
+<div class="md:col-span-4 glass-card rounded-3xl p-8 border border-outline-variant/10 flex flex-col justify-center text-center relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5"></div>
+<div class="relative z-10">
+<div class="text-6xl font-black text-primary mb-2">98%</div>
+<div class="text-on-surface font-bold text-xl mb-4">Retention Rate</div>
+<p class="text-on-surface-variant text-sm">Through space-repetition algorithms and context-aware reminders.</p>
+</div>
+<div class="mt-12 flex justify-center gap-4 relative z-10">
+<div class="w-2 h-12 bg-primary/20 rounded-full self-end"></div>
+<div class="w-2 h-20 bg-primary/40 rounded-full self-end"></div>
+<div class="w-2 h-32 bg-primary rounded-full self-end"></div>
+<div class="w-2 h-24 bg-primary/60 rounded-full self-end"></div>
+</div>
+</div>
+<div class="md:col-span-4 glass-card rounded-3xl p-8 border border-outline-variant/10 group">
+<span class="material-symbols-outlined text-secondary text-4xl mb-6">insights</span>
+<h3 class="font-headline text-2xl font-bold text-white mb-4">Skill Constellations</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">Visualize your knowledge as interconnected stars. Each lesson adds light to your personal galaxy of expertise.</p>
+</div>
+<div class="md:col-span-8 glass-card rounded-3xl p-8 border border-outline-variant/10 flex items-center justify-between gap-8 relative overflow-hidden group">
+<div class="max-w-sm">
+<h3 class="font-headline text-2xl font-bold text-white mb-4">Multimodal Synthesis</h3>
+<p class="text-on-surface-variant text-sm">Visual, auditory, and kinesthetic learning modules generated on-the-fly to suit your preference.</p>
+</div>
+<div class="flex -space-x-4">
+<div class="w-16 h-16 rounded-full border-4 border-surface bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">visibility</span>
+</div>
+<div class="w-16 h-16 rounded-full border-4 border-surface bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">hearing</span>
+</div>
+<div class="w-16 h-16 rounded-full border-4 border-surface bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">touch_app</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Exercise Generator -->
+<section class="py-24 relative">
+<div class="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-outline-variant/20 to-transparent"></div>
+<div class="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+<div class="order-2 lg:order-1">
+<div class="glass-card rounded-[2.5rem] p-1 border border-outline-variant/10 shadow-2xl">
+<div class="bg-surface-container-lowest rounded-[2.25rem] p-8">
+<div class="flex items-center justify-between mb-10">
+<div>
+<h4 class="text-white font-bold">Dynamic Problem Set</h4>
+<p class="text-on-surface-variant text-xs">Generating quantum physics quiz...</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_#ffb873]"></div>
+<span class="text-tertiary text-xs font-bold uppercase tracking-tighter">AI Thinking</span>
+</div>
+</div>
+<div class="space-y-6">
+<div class="p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20">
+<p class="text-on-surface mb-4">Q1: Based on your previous answer, explain the observer effect in the context of Schrödinger's cat.</p>
+<div class="space-y-3">
+<div class="w-full p-4 rounded-xl bg-surface-container text-on-surface-variant border border-outline-variant/10 text-sm">Type your hypothesis here...</div>
+</div>
+</div>
+<div class="flex justify-between items-center px-2">
+<div class="flex gap-4">
+<button class="text-secondary text-sm flex items-center gap-2"><span class="material-symbols-outlined text-lg">science</span> Need Hint?</button>
+<button class="text-on-surface-variant text-sm flex items-center gap-2"><span class="material-symbols-outlined text-lg">refresh</span> New Problem</button>
+</div>
+<button class="px-6 py-2 bg-secondary-container text-on-secondary-container font-bold rounded-full text-sm">Submit</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="order-1 lg:order-2">
+<h2 class="font-headline text-4xl md:text-5xl font-bold text-white mb-6">AI Exercise Generator</h2>
+<p class="text-on-surface-variant text-lg mb-8 leading-relaxed">Stop solving static textbooks. Our engine generates infinite, context-aware practice problems that target your specific knowledge gaps and misconceptions.</p>
+<ul class="space-y-4">
+<li class="flex items-center gap-4 text-on-surface">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Infinite variation for any topic
+                        </li>
+<li class="flex items-center gap-4 text-on-surface">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Recursive difficulty scaling
+                        </li>
+<li class="flex items-center gap-4 text-on-surface">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Instant feedback with cosmic clarity
+                        </li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Intelligent Tutor Chat -->
+<section class="py-24 px-8 max-w-7xl mx-auto">
+<div class="glass-card rounded-[3rem] border border-outline-variant/10 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[600px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)]">
+<div class="lg:col-span-5 p-12 flex flex-col justify-center bg-gradient-to-br from-primary/5 to-transparent">
+<h2 class="font-headline text-4xl font-bold text-white mb-6">Intelligent Tutor Chat</h2>
+<p class="text-on-surface-variant text-lg mb-8">Never learn alone again. Your AI tutor is available 24/7 to deconstruct complex theories into simple cosmic analogies.</p>
+<div class="space-y-6">
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-highest/30 border border-outline-variant/5">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed-dim/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary-fixed-dim">forum</span>
+</div>
+<div>
+<div class="text-white font-bold text-sm">Natural Language Understanding</div>
+<div class="text-on-surface-variant text-xs">Speak naturally, like talking to a human mentor.</div>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-highest/30 border border-outline-variant/5">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary-fixed-dim">psychology</span>
+</div>
+<div>
+<div class="text-white font-bold text-sm">Socratic Method</div>
+<div class="text-on-surface-variant text-xs">The AI guides you to the answer through curiosity.</div>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-7 bg-surface-container/30 relative flex flex-col p-8">
+<div class="flex-1 space-y-6 overflow-y-auto mb-8 pr-4">
+<div class="flex justify-start">
+<div class="max-w-[80%] bg-surface-container-high rounded-2xl rounded-tl-none p-4 text-on-surface-variant text-sm border border-outline-variant/10">
+                                Hello Navigator! I noticed you were exploring Black Hole singularities. Would you like a simple analogy involving a cosmic drain?
+                            </div>
+</div>
+<div class="flex justify-end">
+<div class="max-w-[80%] bg-primary-container text-white rounded-2xl rounded-tr-none p-4 text-sm shadow-lg">
+                                Yes, please! I'm having trouble visualizing why light can't escape the event horizon.
+                            </div>
+</div>
+<div class="flex justify-start">
+<div class="max-w-[80%] bg-surface-container-high rounded-2xl rounded-tl-none p-4 text-on-surface-variant text-sm border border-outline-variant/10">
+                                Think of it like a waterfall. If you're a fish swimming upstream, but the water is falling faster than you can swim... even at the speed of light, you'd still be pulled down.
+                            </div>
+</div>
+</div>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-2xl px-6 py-4 text-on-surface focus:ring-2 focus:ring-secondary transition-all outline-none" placeholder="Ask your tutor anything..." type="text"/>
+<button class="absolute right-3 top-2.5 w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-[#0B0E14] w-full py-12 px-8 border-t border-white/10 mt-20">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="text-lg font-bold text-[#8A2BE2] font-['Space_Grotesk']">EduNova</span>
+<p class="text-slate-500 font-['Inter'] text-sm">© 2024 EduNova. Navigating the Digital Expanse.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-slate-500 font-['Inter'] text-sm hover:text-[#00D2FF] transition-colors focus:ring-2 focus:ring-[#8A2BE2]" href="#">Curriculum</a>
+<a class="text-slate-500 font-['Inter'] text-sm hover:text-[#00D2FF] transition-colors focus:ring-2 focus:ring-[#8A2BE2]" href="#">Tutor AI</a>
+<a class="text-slate-500 font-['Inter'] text-sm hover:text-[#00D2FF] transition-colors focus:ring-2 focus:ring-[#8A2BE2]" href="#">Nebula Community</a>
+<a class="text-slate-500 font-['Inter'] text-sm hover:text-[#00D2FF] transition-colors focus:ring-2 focus:ring-[#8A2BE2]" href="#">Privacy Policy</a>
+</div>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-slate-500 hover:text-white hover:border-primary transition-all" href="#">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.84 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"></path></svg>
+</a>
+<a class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-slate-500 hover:text-white hover:border-primary transition-all" href="#">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.6.11.819-.26.819-.578 0-.284-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.93 0-1.31.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.298 24 12c0-6.627-5.373-12-12-12"></path></svg>
+</a>
+</div>
+</div>
+</footer>
+</body></html>
