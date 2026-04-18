@@ -21,16 +21,35 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // Student Profile
-app.get('/api/student/:id/profile', (req, res) => {
-  res.json({
-    id: req.params.id,
+const mockProfiles = {
+  'user-1': {
+    id: 'user-1',
     subjects: [
       { id: 'math', name: 'Mathematics', level: 2, masteryScore: 40 }
     ],
     currentRoadmap: ['topic-1', 'topic-2'],
     streak: 5,
     lastActiveAt: new Date()
-  });
+  }
+};
+
+app.get('/api/student/:id/profile', (req, res) => {
+  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
+  res.json(profile);
+});
+
+app.post('/api/student/:id/topics', (req, res) => {
+  const { topic } = req.body;
+  if (!topic) {
+    return res.status(400).json({ error: 'Topic is required' });
+  }
+  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
+  // Formatting topic to match existing style (kebab-case)
+  const formattedTopic = topic.toLowerCase().replace(/\s+/g, '-');
+  if (!profile.currentRoadmap.includes(formattedTopic)) {
+    profile.currentRoadmap.push(formattedTopic);
+  }
+  res.json({ success: true, roadmap: profile.currentRoadmap });
 });
 
 // AI Exercises

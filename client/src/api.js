@@ -12,6 +12,15 @@ export const api = {
     return res.json();
   },
 
+  addTopic: async (studentId, topic) => {
+    const res = await fetch(`${API_URL}/student/${studentId}/topics`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic })
+    });
+    return res.json();
+  },
+
   generateExercise: async (topic, level, type) => {
     const res = await fetch(`${API_URL}/exercises/generate`, {
       method: 'POST',

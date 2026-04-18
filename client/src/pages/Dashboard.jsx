@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { api } from '../api';
 import { useStore } from '../store/useStore';
 
 const RoadmapGraph = ({ roadmap }) => {
   const navigate = useNavigate();
-  // Simple vertical graph layout
+  // Dynamic height based on roadmap size
+  const height = Math.max(400, 50 + roadmap.length * 100);
+  
   const nodes = roadmap.map((topic, i) => ({
     id: topic,
     x: 150,
@@ -18,7 +21,7 @@ const RoadmapGraph = ({ roadmap }) => {
   }));
 
   return (
-    <div className="relative w-full h-[400px] flex justify-center bg-surface-container-low rounded-2xl border border-outline-variant/10 overflow-hidden">
+    <div className="relative w-full flex justify-center bg-surface-container-low rounded-2xl border border-outline-variant/10 overflow-hidden" style={{ height: `${height}px` }}>
       <svg className="w-[300px] h-full absolute inset-0 mx-auto">
         {nodes.map((node, i) => {
           if (i === nodes.length - 1) return null;
@@ -66,10 +69,28 @@ const RoadmapGraph = ({ roadmap }) => {
 };
 
 export const Dashboard = () => {
+  const queryClient = useQueryClient();
+  const [newTopic, setNewTopic] = useState('');
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile', 'user-1'],
     queryFn: () => api.getProfile('user-1')
   });
+
+  const addTopicMutation = useMutation({
+    mutationFn: (topic) => api.addTopic('user-1', topic),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', 'user-1'] });
+      setNewTopic('');
+    }
+  });
+
+  const handleAddTopic = (e) => {
+    e.preventDefault();
+    if (newTopic.trim()) {
+      addTopicMutation.mutate(newTopic.trim());
+    }
+  };
 
   if (isLoading || !profile) return <div className="p-8 text-on-surface">Loading Dashboard...</div>;
 
@@ -90,6 +111,21 @@ export const Dashboard = () => {
               </h2>
             </div>
             <RoadmapGraph roadmap={profile.currentRoadmap} />
+          </Card>
+
+          <Card>
+            <h3 className="font-headline text-xl font-bold text-white mb-4">Add Study Topic</h3>
+            <form onSubmit={handleAddTopic} className="flex gap-4 items-center">
+              <Input 
+                value={newTopic} 
+                onChange={(e) => setNewTopic(e.target.value)} 
+                placeholder="e.g. Astrophysics, Linear Algebra" 
+                className="flex-1 py-3 px-4 text-sm"
+              />
+              <Button type="submit" disabled={addTopicMutation.isPending} className="whitespace-nowrap px-6 py-3 text-sm">
+                {addTopicMutation.isPending ? 'Adding...' : 'Add Topic'}
+              </Button>
+            </form>
           </Card>
         </div>
 
