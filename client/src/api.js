@@ -1,144 +1,137 @@
 const API_URL = 'http://localhost:5000/api';
 
-export const api = {
-  // Auth
-  login: async () => {
-    const res = await fetch(`${API_URL}/auth/login`, { method: 'POST' });
-    return res.json();
-  },
+// ── Token store ─────────────────────────────────────────────
+// The Clerk token is set by the AuthProvider on mount
+let _getToken = null;
 
-  // Profile
-  getProfile: async (studentId) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/profile`);
-    return res.json();
-  },
+export function setTokenGetter(fn) {
+  _getToken = fn;
+}
+
+async function authHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  if (_getToken) {
+    try {
+      const token = await _getToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    } catch { /* no-op if not signed in */ }
+  }
+  return headers;
+}
+
+async function authFetch(url, options = {}) {
+  const headers = await authHeaders();
+  // For FormData (file uploads), don't set Content-Type — browser will set it
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
+  const res = await fetch(url, { ...options, headers: { ...headers, ...options.headers } });
+  if (res.status === 401) {
+    // Token expired or user not signed in
+    console.warn('Authentication required');
+  }
+  return res.json();
+}
+
+// ── API methods ─────────────────────────────────────────────
+
+export const api = {
+  // Profile (uses the authenticated user — no ID needed)
+  getProfile: () => authFetch(`${API_URL}/student/profile`),
+
+  // Backward-compatible profile (the :id is ignored server-side, Clerk ID is used)
+  getProfileById: (studentId) => authFetch(`${API_URL}/student/${studentId}/profile`),
 
   // Topics
-  addTopic: async (studentId, topic) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/topics`, {
+  addTopic: (studentId, topic) =>
+    authFetch(`${API_URL}/student/${studentId}/topics`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic })
-    });
-    return res.json();
-  },
+    }),
 
   // Exercises
-  generateExercise: async (topic, level, type, history = []) => {
-    const res = await fetch(`${API_URL}/exercises/generate`, {
+  generateExercise: (topic, level, type, history = []) =>
+    authFetch(`${API_URL}/exercises/generate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic, level, type, history })
-    });
-    return res.json();
-  },
+    }),
 
-  evaluateAnswer: async (question, studentAnswer, topic, level, studentId, responseTimeMs = 0, difficulty = 1) => {
-    const res = await fetch(`${API_URL}/exercises/evaluate`, {
+  evaluateAnswer: (question, studentAnswer, topic, level, studentId, responseTimeMs = 0, difficulty = 1) =>
+    authFetch(`${API_URL}/exercises/evaluate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, studentAnswer, topic, level, studentId, responseTimeMs, difficulty })
-    });
-    return res.json();
-  },
+      body: JSON.stringify({ question, studentAnswer, topic, level, responseTimeMs, difficulty })
+    }),
 
   // Sessions
-  startSession: async (studentId, topic) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/session/start`, {
+  startSession: (studentId, topic) =>
+    authFetch(`${API_URL}/student/${studentId}/session/start`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic })
-    });
-    return res.json();
-  },
+    }),
 
-  completeSession: async (studentId, topic, correctCount, totalQuestions) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/session/complete`, {
+  completeSession: (studentId, topic, correctCount, totalQuestions) =>
+    authFetch(`${API_URL}/student/${studentId}/session/complete`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic, correctCount, totalQuestions })
-    });
-    return res.json();
-  },
+    }),
 
   // Chat
-  chatMessage: async (message, context, history, studentId = 'user-1') => {
-    const res = await fetch(`${API_URL}/chat/message`, {
+  chatMessage: (message, context, history, studentId = '') =>
+    authFetch(`${API_URL}/chat/message`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, context, history, studentId })
-    });
-    return res.json();
-  },
+      body: JSON.stringify({ message, context, history })
+    }),
 
-  // Progress (real data)
-  getProgress: async (studentId) => {
-    const res = await fetch(`${API_URL}/progress/${studentId}`);
-    return res.json();
-  },
+  // Progress
+  getProgress: (studentId) => authFetch(`${API_URL}/progress/${studentId}`),
 
-  // Tasks / Todo
-  getTasks: async (studentId) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/tasks`);
-    return res.json();
-  },
+  // Tasks
+  getTasks: (studentId) => authFetch(`${API_URL}/student/${studentId}/tasks`),
 
-  createTask: async (studentId, title, category = 'GENERAL', dueDate = null) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/tasks`, {
+  createTask: (studentId, title, category = 'GENERAL', dueDate = null) =>
+    authFetch(`${API_URL}/student/${studentId}/tasks`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, category, dueDate })
-    });
-    return res.json();
-  },
+    }),
 
-  updateTask: async (studentId, taskId, updates) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/tasks/${taskId}`, {
+  updateTask: (studentId, taskId, updates) =>
+    authFetch(`${API_URL}/student/${studentId}/tasks/${taskId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
-    });
-    return res.json();
-  },
+    }),
 
-  deleteTask: async (studentId, taskId) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/tasks/${taskId}`, {
+  deleteTask: (studentId, taskId) =>
+    authFetch(`${API_URL}/student/${studentId}/tasks/${taskId}`, {
       method: 'DELETE'
-    });
-    return res.json();
-  },
+    }),
 
   // File Upload
   uploadMaterial: async (studentId, file, topic) => {
     const formData = new FormData();
     formData.append('material', file);
     formData.append('topic', topic);
-    
-    const res = await fetch(`${API_URL}/student/${studentId}/upload`, {
+    return authFetch(`${API_URL}/student/${studentId}/upload`, {
       method: 'POST',
       body: formData
     });
-    return res.json();
   },
 
-  getMaterials: async (studentId) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/materials`);
-    return res.json();
-  },
+  getMaterials: (studentId) => authFetch(`${API_URL}/student/${studentId}/materials`),
 
   // Badges
-  getBadges: async (studentId) => {
-    const res = await fetch(`${API_URL}/student/${studentId}/badges`);
-    return res.json();
-  },
+  getBadges: (studentId) => authFetch(`${API_URL}/student/${studentId}/badges`),
 
   // Onboarding
-  evaluateOnboarding: async (answers) => {
-    const res = await fetch(`${API_URL}/onboarding/evaluate`, {
+  evaluateOnboarding: (answers) =>
+    authFetch(`${API_URL}/onboarding/evaluate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ answers })
-    });
-    return res.json();
-  }
+    }),
+
+  // Auth sync — called after Clerk sign-in to create/update the DB profile
+  syncUser: (email, name, imageUrl) =>
+    authFetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      body: JSON.stringify({ email, name, imageUrl })
+    })
 };

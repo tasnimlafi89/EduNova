@@ -4,74 +4,81 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import { aiService } from './services/ai.service.js';
 import { adaptiveService } from './services/adaptive.service.js';
+import { connectDB, findOrCreateUser } from './services/db.service.js';
+import { clerkAuth, requireSignedIn, getClerkUserId } from './middleware/auth.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ── Global middleware ───────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
+app.use(clerkAuth);                       // Verify Clerk JWT on every request
 
 // File upload config
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }  // 10 MB
 });
 
-// ==========================================
-// AUTH
-// ==========================================
-app.post('/api/auth/register', (req, res) => {
-  res.json({ message: 'User registered successfully (Mock)' });
+// ── Helper: get profile from DB ─────────────────────────────────
+async function loadProfile(req) {
+  const clerkId = getClerkUserId(req);
+  if (!clerkId) return null;
+  const user = await findOrCreateUser(clerkId);
+  return { user, profile: user.toProfile() };
+}
+
+async function saveUser(user, profile) {
+  user.syncFromProfile(profile);
+  await user.save();
+}
+
+// ================================================================
+// AUTH — Clerk handles this, but keep a sync endpoint
+// ================================================================
+app.post('/api/auth/login', requireSignedIn, async (req, res) => {
+  const clerkId = getClerkUserId(req);
+  const user = await findOrCreateUser(clerkId, {
+    email: req.body.email,
+    name: req.body.name,
+    imageUrl: req.body.imageUrl
+  });
+  res.json({ userId: clerkId, name: user.name });
 });
 
-app.post('/api/auth/login', (req, res) => {
-  res.json({ token: 'mock-token-123', userId: 'user-1' });
+// ================================================================
+// STUDENT PROFILE
+// ================================================================
+app.get('/api/student/profile', requireSignedIn, async (req, res) => {
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  res.json(data.profile);
 });
 
-// ==========================================
-// STUDENT PROFILES (in-memory mock)
-// ==========================================
-const mockProfiles = {
-  'user-1': {
-    id: 'user-1',
-    subjects: [],
-    currentRoadmap: [],
-    streak: 5,
-    lastActiveAt: new Date(),
-    // Enhanced tracking fields
-    questionStats: {},
-    topicStats: {},
-    activityLog: [],
-    sessionTimers: {},
-    tasks: [],
-    materials: [],
-    badges: [
-      { id: 'first-login', name: 'First Steps', icon: 'rocket_launch', earnedAt: new Date() }
-    ],
-    notifications: []
-  }
-};
-
-app.get('/api/student/:id/profile', (req, res) => {
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  res.json(profile);
+// Keep backward-compat with /api/student/:id/profile
+app.get('/api/student/:id/profile', requireSignedIn, async (req, res) => {
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  res.json(data.profile);
 });
 
-// ==========================================
+// ================================================================
 // TOPIC MANAGEMENT
-// ==========================================
-app.post('/api/student/:id/topics', (req, res) => {
+// ================================================================
+app.post('/api/student/:id/topics', requireSignedIn, async (req, res) => {
   const { topic } = req.body;
-  if (!topic) {
-    return res.status(400).json({ error: 'Topic is required' });
-  }
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
+  if (!topic) return res.status(400).json({ error: 'Topic is required' });
+
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  const { user, profile } = data;
+
   const formattedTopic = topic.toLowerCase().replace(/\s+/g, '-');
   if (!profile.currentRoadmap.includes(formattedTopic)) {
     profile.currentRoadmap.push(formattedTopic);
-    // Auto-create a study task
     profile.tasks.push({
       id: `task-${Date.now()}`,
       title: `Start studying: ${topic}`,
@@ -82,68 +89,73 @@ app.post('/api/student/:id/topics', (req, res) => {
       notificationSent: false
     });
   }
+
+  await saveUser(user, profile);
   res.json({ success: true, roadmap: profile.currentRoadmap });
 });
 
-// ==========================================
-// AI EXERCISES (enhanced with response time tracking)
-// ==========================================
-app.post('/api/exercises/generate', async (req, res) => {
+// ================================================================
+// AI EXERCISES
+// ================================================================
+app.post('/api/exercises/generate', requireSignedIn, async (req, res) => {
   const { topic, level, type, history } = req.body;
   if (!topic || !level || !type) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
   const exercise = await aiService.generateExercise(topic, level, type, history);
-  // Attach timestamp so frontend can compute response time
   exercise.generatedAt = Date.now();
   res.json(exercise);
 });
 
-app.post('/api/exercises/evaluate', async (req, res) => {
-  const { question, studentAnswer, topic, level, studentId, responseTimeMs, difficulty } = req.body;
+app.post('/api/exercises/evaluate', requireSignedIn, async (req, res) => {
+  const { question, studentAnswer, topic, level, responseTimeMs, difficulty } = req.body;
   if (!question || !studentAnswer) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
   const evaluation = await aiService.evaluateAnswer(question, studentAnswer, topic, level);
-  
-  if (studentId && mockProfiles[studentId]) {
+
+  const data = await loadProfile(req);
+  if (data) {
+    const { user, profile } = data;
     const result = adaptiveService.recordAttempt(
-      mockProfiles[studentId], 
-      topic, 
-      question, 
-      evaluation.isCorrect, 
-      responseTimeMs || 0,
-      difficulty || level
+      profile, topic, question, evaluation.isCorrect,
+      responseTimeMs || 0, difficulty || level
     );
     evaluation.weightedScore = result.weightedScore;
+    await saveUser(user, profile);
   }
 
   res.json(evaluation);
 });
 
-// ==========================================
+// ================================================================
 // SESSION MANAGEMENT
-// ==========================================
-app.post('/api/student/:id/session/start', (req, res) => {
+// ================================================================
+app.post('/api/student/:id/session/start', requireSignedIn, async (req, res) => {
   const { topic } = req.body;
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  const { user, profile } = data;
+
   if (!profile.sessionTimers) profile.sessionTimers = {};
   profile.sessionTimers[topic] = {
     ...(profile.sessionTimers[topic] || { totalMs: 0 }),
     startedAt: Date.now()
   };
-  
+
+  await saveUser(user, profile);
   res.json({ success: true, startedAt: Date.now() });
 });
 
-app.post('/api/student/:id/session/complete', (req, res) => {
+app.post('/api/student/:id/session/complete', requireSignedIn, async (req, res) => {
   const { topic, correctCount, totalQuestions } = req.body;
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  const { user, profile } = data;
+
   // Track session time
-  if (profile.sessionTimers && profile.sessionTimers[topic] && profile.sessionTimers[topic].startedAt) {
+  if (profile.sessionTimers?.[topic]?.startedAt) {
     const elapsed = Date.now() - profile.sessionTimers[topic].startedAt;
     profile.sessionTimers[topic].totalMs = (profile.sessionTimers[topic].totalMs || 0) + elapsed;
     profile.sessionTimers[topic].startedAt = null;
@@ -151,7 +163,12 @@ app.post('/api/student/:id/session/complete', (req, res) => {
 
   let subject = profile.subjects.find(s => s.id === topic);
   if (!subject) {
-    subject = { id: topic, name: topic.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), level: 1, masteryScore: 0 };
+    subject = {
+      id: topic,
+      name: topic.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      level: 1,
+      masteryScore: 0
+    };
     profile.subjects.push(subject);
   }
 
@@ -159,17 +176,16 @@ app.post('/api/student/:id/session/complete', (req, res) => {
   let oldLevel = subject.level;
   let newLevel = subject.level;
 
-  if (profile.topicStats && profile.topicStats[topic]) {
+  if (profile.topicStats?.[topic]) {
     const stat = profile.topicStats[topic];
     subject.masteryScore = stat.accuracy;
-    
+
     if (stat.accuracy >= 100 && subject.level < 3) {
       subject.level += 1;
       stat.level = subject.level;
       leveledUp = true;
       newLevel = subject.level;
-      
-      // Award badge on level up
+
       const badgeId = `level-${newLevel}-${topic}`;
       if (!profile.badges.find(b => b.id === badgeId)) {
         profile.badges.push({
@@ -198,13 +214,13 @@ app.post('/api/student/:id/session/complete', (req, res) => {
   }
   profile.lastActiveAt = new Date();
 
-  // Check streak badges
   if (profile.streak >= 7 && !profile.badges.find(b => b.id === 'streak-7')) {
     profile.badges.push({ id: 'streak-7', name: 'Week Warrior', icon: 'local_fire_department', earnedAt: new Date() });
   }
 
   const feedback = adaptiveService.generateFeedback(profile, topic);
 
+  await saveUser(user, profile);
   res.json({
     success: true,
     masteryScore: subject.masteryScore,
@@ -221,25 +237,22 @@ function getLevelName(lvl) {
   return 'Advanced';
 }
 
-// ==========================================
-// AI CHAT (enhanced with context injection)
-// ==========================================
-app.post('/api/chat/message', async (req, res) => {
-  const { studentId, message, context, history } = req.body;
-  if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
-  }
+// ================================================================
+// AI CHAT
+// ================================================================
+app.post('/api/chat/message', requireSignedIn, async (req, res) => {
+  const { message, context, history } = req.body;
+  if (!message) return res.status(400).json({ error: 'Message is required' });
 
-  // Inject adaptive context if we have a profile
   let enrichedContext = context || { topic: 'General', level: 1, recentScores: [] };
-  if (studentId && mockProfiles[studentId]) {
-    const profile = mockProfiles[studentId];
-    const recommendation = adaptiveService.getAdaptiveRecommendation(profile);
+  const data = await loadProfile(req);
+  if (data) {
+    const recommendation = adaptiveService.getAdaptiveRecommendation(data.profile);
     enrichedContext = {
       ...enrichedContext,
       weakAreas: recommendation?.reason || 'none detected',
       weakTopic: recommendation?.topicId || null,
-      studentTopics: profile.currentRoadmap,
+      studentTopics: data.profile.currentRoadmap,
     };
   }
 
@@ -247,35 +260,33 @@ app.post('/api/chat/message', async (req, res) => {
   res.json({ reply });
 });
 
-// ==========================================
-// REAL PROGRESS (powered by adaptive service)
-// ==========================================
-app.get('/api/progress/:studentId', (req, res) => {
-  const profile = mockProfiles[req.params.studentId] || mockProfiles['user-1'];
-  const analytics = adaptiveService.getProgressAnalytics(profile);
-  
-  res.json({
-    studentId: req.params.studentId,
-    ...analytics
-  });
+// ================================================================
+// PROGRESS
+// ================================================================
+app.get('/api/progress/:studentId', requireSignedIn, async (req, res) => {
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  const analytics = adaptiveService.getProgressAnalytics(data.profile);
+  res.json({ studentId: data.profile.id, ...analytics });
 });
 
-// ==========================================
-// TODO / TASK MANAGEMENT
-// ==========================================
-app.get('/api/student/:id/tasks', (req, res) => {
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  if (!profile.tasks) profile.tasks = [];
-  res.json({ tasks: profile.tasks });
+// ================================================================
+// TASKS
+// ================================================================
+app.get('/api/student/:id/tasks', requireSignedIn, async (req, res) => {
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({ tasks: data.profile.tasks || [] });
 });
 
-app.post('/api/student/:id/tasks', (req, res) => {
+app.post('/api/student/:id/tasks', requireSignedIn, async (req, res) => {
   const { title, category, dueDate } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
-  
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  if (!profile.tasks) profile.tasks = [];
-  
+
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  const { user, profile } = data;
+
   const task = {
     id: `task-${Date.now()}`,
     title,
@@ -285,16 +296,20 @@ app.post('/api/student/:id/tasks', (req, res) => {
     dueDate: dueDate ? new Date(dueDate) : null,
     notificationSent: false
   };
-  
   profile.tasks.push(task);
+
+  await saveUser(user, profile);
   res.json({ success: true, task });
 });
 
-app.patch('/api/student/:id/tasks/:taskId', (req, res) => {
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  const task = (profile.tasks || []).find(t => t.id === req.params.taskId);
+app.patch('/api/student/:id/tasks/:taskId', requireSignedIn, async (req, res) => {
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  const { user, profile } = data;
+
+  const task = profile.tasks.find(t => t.id === req.params.taskId);
   if (!task) return res.status(404).json({ error: 'Task not found' });
-  
+
   if (req.body.title !== undefined) task.title = req.body.title;
   if (req.body.category !== undefined) task.category = req.body.category;
   if (req.body.isCompleted !== undefined) {
@@ -302,35 +317,40 @@ app.patch('/api/student/:id/tasks/:taskId', (req, res) => {
     if (task.isCompleted) task.completedAt = new Date();
   }
   if (req.body.dueDate !== undefined) task.dueDate = req.body.dueDate ? new Date(req.body.dueDate) : null;
-  
+
+  await saveUser(user, profile);
   res.json({ success: true, task });
 });
 
-app.delete('/api/student/:id/tasks/:taskId', (req, res) => {
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  profile.tasks = (profile.tasks || []).filter(t => t.id !== req.params.taskId);
+app.delete('/api/student/:id/tasks/:taskId', requireSignedIn, async (req, res) => {
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  const { user, profile } = data;
+
+  profile.tasks = profile.tasks.filter(t => t.id !== req.params.taskId);
+  await saveUser(user, profile);
   res.json({ success: true });
 });
 
-// ==========================================
+// ================================================================
 // FILE UPLOAD & MATERIALS
-// ==========================================
-app.post('/api/student/:id/upload', upload.single('material'), async (req, res) => {
+// ================================================================
+app.post('/api/student/:id/upload', requireSignedIn, upload.single('material'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  if (!profile.materials) profile.materials = [];
-  
-  // Extract text from the file (simplified — in production use pdf-parse)
+
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  const { user, profile } = data;
+
   let textContent = '';
   try {
     textContent = req.file.buffer.toString('utf8').substring(0, 5000);
   } catch {
-    textContent = `Content of ${req.file.originalname} (binary file — needs pdf-parse for proper extraction)`;
+    textContent = `Content of ${req.file.originalname} (binary file)`;
   }
 
   const summary = await aiService.summarizeText(textContent, req.body.topic || 'General');
-  
+
   const material = {
     id: `mat-${Date.now()}`,
     filename: req.file.originalname,
@@ -340,41 +360,49 @@ app.post('/api/student/:id/upload', upload.single('material'), async (req, res) 
     size: req.file.size,
     status: 'PROCESSED'
   };
-  
+
   profile.materials.push(material);
-  
-  // Log activity
-  if (!profile.activityLog) profile.activityLog = [];
   profile.activityLog.push({
     type: 'upload',
     topicId: material.topicId,
     timestamp: new Date(),
     questionPreview: `Uploaded: ${req.file.originalname}`
   });
-  
+
+  await saveUser(user, profile);
   res.json({ success: true, material });
 });
 
-app.get('/api/student/:id/materials', (req, res) => {
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  res.json({ materials: profile.materials || [] });
+app.get('/api/student/:id/materials', requireSignedIn, async (req, res) => {
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({ materials: data.profile.materials || [] });
 });
 
-// ==========================================
-// BADGES & GAMIFICATION
-// ==========================================
-app.get('/api/student/:id/badges', (req, res) => {
-  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
-  res.json({ badges: profile.badges || [] });
+// ================================================================
+// BADGES
+// ================================================================
+app.get('/api/student/:id/badges', requireSignedIn, async (req, res) => {
+  const data = await loadProfile(req);
+  if (!data) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({ badges: data.profile.badges || [] });
 });
 
-// ==========================================
+// ================================================================
 // ONBOARDING
-// ==========================================
+// ================================================================
 app.post('/api/onboarding/evaluate', (req, res) => {
   res.json({ initialLevel: 2, assignedRoadmap: ['intro-quantum', 'wave-particle'] });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// ================================================================
+// START SERVER
+// ================================================================
+async function startServer() {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`🚀 EduNova API running on port ${PORT}`);
+  });
+}
+
+startServer();
