@@ -1,0 +1,228 @@
+/* ============================================
+   EduNova - Celestial Navigator Design System
+   Animations, Transitions & Micro-interactions
+   ============================================ */
+
+/* Page Transitions */
+@keyframes cosmicFadeIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes cosmicSlideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cosmicSlideRight {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cosmicZoomIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(138,43,226,0.3); }
+  50% { box-shadow: 0 0 24px rgba(138,43,226,0.6); }
+}
+
+@keyframes progressFill {
+  from { width: 0%; }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes starPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(138,43,226,0.2); }
+  50% { border-color: rgba(138,43,226,0.5); }
+}
+
+@keyframes orbitalSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ripple {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes confettiBurst {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-200px) rotate(720deg); opacity: 0; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes slideInNotification {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOutNotification {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
+}
+
+/* Utility Animation Classes */
+.animate-cosmic-fade { animation: cosmicFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-cosmic-slide { animation: cosmicSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-cosmic-slide-right { animation: cosmicSlideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-cosmic-zoom { animation: cosmicZoomIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+.animate-border-glow { animation: borderGlow 2s ease-in-out infinite; }
+.animate-orbital { animation: orbitalSpin 20s linear infinite; }
+.animate-shake { animation: shake 0.3s ease-in-out; }
+.animate-notification-in { animation: slideInNotification 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-notification-out { animation: fadeOutNotification 0.3s ease forwards; }
+
+/* Staggered Children Animations */
+.stagger-children > * { opacity: 0; animation: cosmicSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, #1d2026 0%, #32353c 40%, #1d2026 80%);
+  background-size: 300% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+/* Progress Bar Animation */
+.progress-animated {
+  animation: progressFill 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Card Hover Effects */
+.card-interactive {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.3s ease,
+              border-color 0.3s ease;
+}
+.card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px -12px rgba(138, 43, 226, 0.15);
+  border-color: rgba(138, 43, 226, 0.25);
+}
+
+/* Button Ripple */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 10%, transparent 10%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+.btn-ripple:active::after {
+  transform: scale(10);
+  opacity: 0;
+  transition: 0s;
+}
+
+/* Circular Progress */
+.circular-progress-track {
+  transition: stroke-dashoffset 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Notification Toast Container */
+.notification-container {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+.notification-container > * {
+  pointer-events: auto;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+  background: rgba(138, 43, 226, 0.3); 
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(138, 43, 226, 0.5); }
+
+/* Selection */
+::selection {
+  background: rgba(138, 43, 226, 0.4);
+  color: white;
+}
+
+/* Smooth focus states */
+*:focus-visible {
+  outline: 2px solid rgba(220, 184, 255, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Tooltip */
+.tooltip-trigger {
+  position: relative;
+}
+.tooltip-trigger::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #32353c;
+  color: #e1e2eb;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 100;
+}
+.tooltip-trigger:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

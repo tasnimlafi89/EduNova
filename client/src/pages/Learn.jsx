@@ -24,10 +24,6 @@ export const Learn = () => {
   const [sessionResult, setSessionResult] = useState(null);
   const [completing, setCompleting] = useState(false);
 
-  useEffect(() => {
-    loadProfileAndExercise();
-  }, [topicId]);
-
   const loadProfileAndExercise = async () => {
     setLoading(true);
     const profile = await api.getProfile('user-1');
@@ -36,6 +32,10 @@ export const Learn = () => {
     setLevel(currentLevel);
     await loadExercise(currentLevel, []);
   };
+
+  useEffect(() => {
+    loadProfileAndExercise();
+  }, [topicId]);
 
   const loadExercise = async (lvl = level, currentHistory = askedQuestions) => {
     const targetMax = lvl === 1 ? 3 : lvl === 2 ? 5 : 7;
