@@ -93,7 +93,13 @@ export const Learn = () => {
           <span className="material-symbols-outlined text-8xl text-secondary mb-6 animate-bounce">workspace_premium</span>
           <h1 className="font-headline text-5xl font-black text-white mb-4 bg-clip-text text-transparent bg-gradient-to-r from-secondary to-primary">Level Up!</h1>
           <p className="text-on-surface text-xl mb-2">Congratulations!</p>
-          <p className="text-on-surface-variant mb-8">You've mastered this stage and upgraded from <span className="text-white font-bold">{sessionResult.oldLevelName}</span> to <span className="text-secondary font-bold">{sessionResult.newLevelName}</span> in {topicId.replace('-', ' ')}.</p>
+          <p className="text-on-surface-variant mb-6">You've mastered this stage and upgraded from <span className="text-white font-bold">{sessionResult.oldLevelName}</span> to <span className="text-secondary font-bold">{sessionResult.newLevelName}</span> in {topicId.replace('-', ' ')}.</p>
+          {sessionResult.feedback && (
+            <div className="bg-primary/10 border border-primary/20 text-primary p-4 rounded-xl mb-8 max-w-2xl mx-auto text-left">
+              <span className="material-symbols-outlined align-middle mr-2 text-sm">tips_and_updates</span>
+              <span className="text-sm font-medium">{sessionResult.feedback}</span>
+            </div>
+          )}
           <Button variant="primary" onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
         </div>
       );
@@ -104,7 +110,13 @@ export const Learn = () => {
         <span className="material-symbols-outlined text-6xl text-primary mb-4">task_alt</span>
         <h1 className="font-headline text-4xl font-bold text-white mb-4">Study Session Complete!</h1>
         <p className="text-on-surface-variant mb-2">You scored {correctCount} out of {MAX_QUESTIONS} correct.</p>
-        <p className="text-on-surface-variant mb-8">Your overall mastery for this topic is now <span className="text-secondary font-bold">{sessionResult.masteryScore}%</span>.</p>
+        <p className="text-on-surface-variant mb-6">Your overall mastery for this topic is now <span className="text-secondary font-bold">{sessionResult.masteryScore}%</span>.</p>
+        {sessionResult.feedback && (
+          <div className="bg-surface-container border border-outline-variant/10 text-on-surface-variant p-4 rounded-xl mb-8 max-w-2xl mx-auto text-left">
+            <span className="material-symbols-outlined align-middle mr-2 text-sm text-secondary">analytics</span>
+            <span className="text-sm">{sessionResult.feedback}</span>
+          </div>
+        )}
         <Button variant="primary" onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
       </div>
     );

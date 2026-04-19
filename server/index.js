@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { aiService } from './services/ai.service.js';
+import { adaptiveService } from './services/adaptive.service.js';
 
 dotenv.config();
 
@@ -64,12 +65,18 @@ app.post('/api/exercises/generate', async (req, res) => {
 });
 
 app.post('/api/exercises/evaluate', async (req, res) => {
-  const { question, studentAnswer, topic, level } = req.body;
+  const { question, studentAnswer, topic, level, studentId } = req.body;
   if (!question || !studentAnswer) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
   const evaluation = await aiService.evaluateAnswer(question, studentAnswer, topic, level);
+  
+  if (studentId && mockProfiles[studentId]) {
+    // Record attempt for knowledge tracking
+    adaptiveService.recordAttempt(mockProfiles[studentId], topic, question, evaluation.isCorrect);
+  }
+
   res.json(evaluation);
 });
 
@@ -83,25 +90,26 @@ app.post('/api/student/:id/session/complete', (req, res) => {
     profile.subjects.push(subject);
   }
 
-  const sessionPercentage = (correctCount / totalQuestions) * 100;
-  // Add 40% of the session score to mastery so users can level up after a few good sessions
-  const masteryGained = Math.round(sessionPercentage * 0.4); 
-  
-  subject.masteryScore += masteryGained;
-
+  // Update masteryScore based on the new adaptive logic (which stores accuracy in topicStats)
   let leveledUp = false;
   let oldLevel = subject.level;
   let newLevel = subject.level;
 
-  if (subject.masteryScore >= 100) {
-    if (subject.level < 3) {
-      subject.masteryScore = 0;
+  if (profile.topicStats && profile.topicStats[topic]) {
+    const stat = profile.topicStats[topic];
+    subject.masteryScore = stat.accuracy; // Sync accuracy to masteryScore
+    
+    // Level up logic remains intact but utilizes new accuracy
+    if (stat.accuracy >= 100 && subject.level < 3) {
       subject.level += 1;
+      stat.level = subject.level;
       leveledUp = true;
       newLevel = subject.level;
-    } else {
-      subject.masteryScore = 100; // maxed out at Advanced 100%
     }
+  } else {
+    // Fallback if no questions were actually evaluated
+    const sessionPercentage = (correctCount / totalQuestions) * 100;
+    subject.masteryScore = Math.min(100, Math.round(sessionPercentage));
   }
 
   const getLevelName = (lvl) => {
@@ -110,12 +118,16 @@ app.post('/api/student/:id/session/complete', (req, res) => {
     return 'Advanced';
   };
 
+  // Generate personalized feedback
+  const feedback = adaptiveService.generateFeedback(profile, topic);
+
   res.json({
     success: true,
     masteryScore: subject.masteryScore,
     leveledUp,
     oldLevelName: getLevelName(oldLevel),
-    newLevelName: getLevelName(newLevel)
+    newLevelName: getLevelName(newLevel),
+    feedback
   });
 });
 
