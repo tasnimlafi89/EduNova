@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUser } from '@clerk/clerk-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -103,22 +104,27 @@ export const Dashboard = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const notify = useNotification();
+  const { user } = useUser();
+  const userId = user?.id || 'me';
+  const firstName = user?.firstName || 'Navigator';
   const [newTopic, setNewTopic] = useState('');
 
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['profile', 'user-1'],
-    queryFn: () => api.getProfile('user-1')
+    queryKey: ['profile', userId],
+    queryFn: () => api.getProfile(),
+    enabled: !!user
   });
 
   const { data: progressData } = useQuery({
-    queryKey: ['progress', 'user-1'],
-    queryFn: () => api.getProgress('user-1')
+    queryKey: ['progress', userId],
+    queryFn: () => api.getProgress(userId),
+    enabled: !!user
   });
 
   const addTopicMutation = useMutation({
-    mutationFn: (topic) => api.addTopic('user-1', topic),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['profile', 'user-1'] });
+    mutationFn: (topic) => api.addTopic(userId, topic),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', userId] });
       setNewTopic('');
       notify.success('Topic Added', `"${newTopic}" has been added to your roadmap!`);
     }
@@ -142,7 +148,7 @@ export const Dashboard = () => {
     <div className="max-w-7xl mx-auto px-6 py-10 w-full">
       {/* Header with streak */}
       <div className="mb-10 stagger-children">
-        <h1 className="font-headline text-4xl font-bold text-white mb-2">Welcome back, Navigator.</h1>
+        <h1 className="font-headline text-4xl font-bold text-white mb-2">Welcome back, {firstName}.</h1>
         <div className="flex items-center gap-4 flex-wrap">
           <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-tertiary/10 border border-tertiary/20 text-tertiary text-sm font-bold">
             <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>

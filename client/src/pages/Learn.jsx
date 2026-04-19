@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ExerciseSkeleton } from '../components/ui/Skeleton';
@@ -10,6 +11,8 @@ export const Learn = () => {
   const { topicId } = useParams();
   const navigate = useNavigate();
   const notify = useNotification();
+  const { user } = useUser();
+  const userId = user?.id || 'me';
   const [exercise, setExercise] = useState(null);
   const [answer, setAnswer] = useState('');
   const [evaluation, setEvaluation] = useState(null);
@@ -51,14 +54,14 @@ export const Learn = () => {
 
   const loadProfileAndExercise = async () => {
     setLoading(true);
-    const profile = await api.getProfile('user-1');
+    const profile = await api.getProfile();
     const subject = profile.subjects.find(s => s.id === topicId);
     const currentLevel = subject ? subject.level : 1;
     setLevel(currentLevel);
     setMaxQuestions(MAX_QUESTIONS_MAP[currentLevel] || 3);
     
     // Start session timer on backend
-    await api.startSession('user-1', topicId);
+    await api.startSession(userId, topicId);
     
     await loadExercise(currentLevel, []);
   };
@@ -92,7 +95,7 @@ export const Learn = () => {
     const responseTimeMs = Date.now() - questionStartTime.current;
     
     const data = await api.evaluateAnswer(
-      exercise.question, answer, topicId, level, 'user-1',
+      exercise.question, answer, topicId, level, userId,
       responseTimeMs, exercise.difficulty || level
     );
     
@@ -117,7 +120,7 @@ export const Learn = () => {
 
   const handleFinishSession = async () => {
     setCompleting(true);
-    const result = await api.completeSession('user-1', topicId, correctCount, maxQuestions);
+    const result = await api.completeSession(userId, topicId, correctCount, maxQuestions);
     setSessionResult(result);
     setCompleting(false);
     

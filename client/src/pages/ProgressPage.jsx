@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import { Card } from '../components/ui/Card';
 import { CircularProgress } from '../components/ui/CircularProgress';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
@@ -50,9 +51,12 @@ const TrendBadge = ({ trend }) => {
 
 export const ProgressPage = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
+  const userId = user?.id || 'me';
   const { data: progress, isLoading } = useQuery({
-    queryKey: ['progress', 'user-1'],
-    queryFn: () => api.getProgress('user-1')
+    queryKey: ['progress', userId],
+    queryFn: () => api.getProgress(userId),
+    enabled: !!user
   });
 
   if (isLoading || !progress) return <DashboardSkeleton />;

@@ -1,6 +1,8 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Outlet, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ClerkProvider, SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
+import { AuthProvider } from './components/AuthProvider';
 import { NotificationProvider } from './components/ui/Notification';
 import { Landing } from './pages/Landing';
 import { Onboarding } from './pages/Onboarding';
@@ -10,9 +12,14 @@ import { ChatPage } from './pages/ChatPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { TodoPage } from './pages/TodoPage';
 import { MaterialsPage } from './pages/MaterialsPage';
+import { SignInPage } from './pages/SignInPage';
+import { SignUpPage } from './pages/SignUpPage';
+
+const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 const queryClient = new QueryClient();
 
+// ── Navigation Link ─────────────────────────────────────────────
 const NavLink = ({ to, icon, label }) => {
   const location = useLocation();
   const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
@@ -34,7 +41,10 @@ const NavLink = ({ to, icon, label }) => {
   );
 };
 
+// ── Authenticated App Layout ────────────────────────────────────
 const AppLayout = () => {
+  const { user } = useUser();
+
   return (
     <div className="min-h-screen flex flex-col bg-surface-container-lowest text-on-surface">
       <nav className="sticky top-0 z-50 bg-[#0B0E14]/80 backdrop-blur-xl shadow-[0_4px_24px_0_rgba(138,43,226,0.08)] border-b border-white/5">
@@ -51,9 +61,24 @@ const AppLayout = () => {
             <NavLink to="/chat" icon="smart_toy" label="AI Tutor" />
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-container text-white flex items-center justify-center font-bold text-sm shadow-[0_0_12px_rgba(138,43,226,0.3)]">
-              S
-            </div>
+            {user && (
+              <span className="hidden md:inline text-sm text-on-surface-variant font-medium mr-1">
+                {user.firstName || 'Navigator'}
+              </span>
+            )}
+            <UserButton 
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: 'w-9 h-9 shadow-[0_0_12px_rgba(138,43,226,0.3)]',
+                  userButtonPopoverCard: 'bg-surface-container border border-outline-variant/10',
+                  userButtonPopoverActionButton: 'text-on-surface hover:bg-surface-container-high',
+                  userButtonPopoverActionButtonText: 'text-on-surface',
+                  userButtonPopoverActionButtonIcon: 'text-on-surface-variant',
+                  userButtonPopoverFooter: 'hidden'
+                }
+              }}
+            />
           </div>
         </div>
       </nav>
@@ -66,27 +91,69 @@ const AppLayout = () => {
   );
 };
 
-function App() {
+// ── Protected Route Wrapper ─────────────────────────────────────
+const ProtectedRoute = ({ children }) => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <NotificationProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            
-            <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/learn/:topicId" element={<Learn />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/progress" element={<ProgressPage />} />
-              <Route path="/tasks" element={<TodoPage />} />
-              <Route path="/materials" element={<MaterialsPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </NotificationProvider>
-    </QueryClientProvider>
+    <>
+      <SignedIn>{children}</SignedIn>
+      <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
+    </>
+  );
+};
+
+// ── Root App ────────────────────────────────────────────────────
+function App() {
+  if (!CLERK_KEY) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface-container-lowest text-on-surface p-8">
+        <div className="max-w-lg text-center space-y-4">
+          <span className="material-symbols-outlined text-error text-5xl">error</span>
+          <h1 className="font-headline text-2xl font-bold text-white">Clerk Key Missing</h1>
+          <p className="text-on-surface-variant">
+            Set <code className="px-2 py-0.5 rounded bg-surface-container text-primary text-sm">VITE_CLERK_PUBLISHABLE_KEY</code> in 
+            <code className="px-2 py-0.5 rounded bg-surface-container text-primary text-sm ml-1">client/.env</code>
+          </p>
+          <div className="bg-surface-container rounded-xl p-4 text-left text-sm text-on-surface-variant font-mono">
+            <p># client/.env</p>
+            <p>VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxx</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ClerkProvider publishableKey={CLERK_KEY}>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <NotificationProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/sign-in/*" element={<SignInPage />} />
+                <Route path="/sign-up/*" element={<SignUpPage />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                
+                {/* Protected routes */}
+                <Route element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/learn/:topicId" element={<Learn />} />
+                  <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/progress" element={<ProgressPage />} />
+                  <Route path="/tasks" element={<TodoPage />} />
+                  <Route path="/materials" element={<MaterialsPage />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </NotificationProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </ClerkProvider>
   );
 }
 

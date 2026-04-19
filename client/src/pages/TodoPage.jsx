@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUser } from '@clerk/clerk-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -17,6 +18,8 @@ const getCategoryStyle = (cat) => CATEGORIES.find(c => c.value === cat) || CATEG
 export const TodoPage = () => {
   const queryClient = useQueryClient();
   const notify = useNotification();
+  const { user } = useUser();
+  const userId = user?.id || 'me';
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('GENERAL');
   const [filter, setFilter] = useState('ALL'); // ALL, ACTIVE, COMPLETED
@@ -24,12 +27,13 @@ export const TodoPage = () => {
   const [editTitle, setEditTitle] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['tasks', 'user-1'],
-    queryFn: () => api.getTasks('user-1')
+    queryKey: ['tasks', userId],
+    queryFn: () => api.getTasks(userId),
+    enabled: !!user
   });
 
   const createMutation = useMutation({
-    mutationFn: ({ title, category }) => api.createTask('user-1', title, category),
+    mutationFn: ({ title, category }) => api.createTask(userId, title, category),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setNewTitle('');
@@ -38,7 +42,7 @@ export const TodoPage = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ taskId, updates }) => api.updateTask('user-1', taskId, updates),
+    mutationFn: ({ taskId, updates }) => api.updateTask(userId, taskId, updates),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       if (variables.updates.isCompleted) {
@@ -49,7 +53,7 @@ export const TodoPage = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (taskId) => api.deleteTask('user-1', taskId),
+    mutationFn: (taskId) => api.deleteTask(userId, taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       notify.info('Task Deleted', 'Task has been removed.');

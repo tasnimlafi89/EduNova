@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUser } from '@clerk/clerk-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -9,18 +10,21 @@ import { api } from '../api';
 export const MaterialsPage = () => {
   const queryClient = useQueryClient();
   const notify = useNotification();
+  const { user } = useUser();
+  const userId = user?.id || 'me';
   const fileInputRef = useRef(null);
   const [topic, setTopic] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['materials', 'user-1'],
-    queryFn: () => api.getMaterials('user-1')
+    queryKey: ['materials', userId],
+    queryFn: () => api.getMaterials(userId),
+    enabled: !!user
   });
 
   const uploadMutation = useMutation({
-    mutationFn: ({ file, topic }) => api.uploadMaterial('user-1', file, topic),
+    mutationFn: ({ file, topic }) => api.uploadMaterial(userId, file, topic),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['materials'] });
       notify.success('Upload Complete', `File processed and summarized!`);

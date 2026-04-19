@@ -4,16 +4,20 @@ import { Input } from '../components/ui/Input';
 import { api } from '../api';
 import { useStore } from '../store/useStore';
 import { useQuery } from '@tanstack/react-query';
+import { useUser } from '@clerk/clerk-react';
 
 export const ChatPage = () => {
   const { chatHistory, addMessage } = useStore();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
+  const { user } = useUser();
+  const userId = user?.id || 'me';
 
   const { data: profile } = useQuery({
-    queryKey: ['profile', 'user-1'],
-    queryFn: () => api.getProfile('user-1')
+    queryKey: ['profile', userId],
+    queryFn: () => api.getProfile(),
+    enabled: !!user
   });
 
   useEffect(() => {
@@ -39,7 +43,7 @@ export const ChatPage = () => {
       studentTopics: profile?.currentRoadmap || []
     };
 
-    const res = await api.chatMessage(userMsg.content, context, chatHistory, 'user-1');
+    const res = await api.chatMessage(userMsg.content, context, chatHistory, userId);
     addMessage({ role: 'tutor', content: res.reply });
     setLoading(false);
   };
