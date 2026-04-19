@@ -5,15 +5,13 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { api } from '../api';
-import { useStore } from '../store/useStore';
-
-const RoadmapGraph = ({ roadmap, subjects = [] }) => {
+const RoadmapGraph = ({ roadmap = [], subjects = [] }) => {
   const navigate = useNavigate();
   // Dynamic height based on roadmap size
-  const height = Math.max(400, 50 + roadmap.length * 100);
+  const height = Math.max(400, 50 + (roadmap?.length || 0) * 100);
   
-  const nodes = roadmap.map((topic, i) => {
-    const subject = subjects.find(s => s.id === topic);
+  const nodes = (roadmap || []).map((topic, i) => {
+    const subject = subjects?.find(s => s.id === topic);
     const mastery = subject ? subject.masteryScore : 0;
     const level = subject ? subject.level : 1;
     
