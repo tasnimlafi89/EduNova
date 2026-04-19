@@ -21,11 +21,11 @@ export const api = {
     return res.json();
   },
 
-  generateExercise: async (topic, level, type) => {
+  generateExercise: async (topic, level, type, history = []) => {
     const res = await fetch(`${API_URL}/exercises/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, level, type })
+      body: JSON.stringify({ topic, level, type, history })
     });
     return res.json();
   },

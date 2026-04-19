@@ -54,12 +54,12 @@ app.post('/api/student/:id/topics', (req, res) => {
 
 // AI Exercises
 app.post('/api/exercises/generate', async (req, res) => {
-  const { topic, level, type } = req.body;
+  const { topic, level, type, history } = req.body;
   if (!topic || !level || !type) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
-  const exercise = await aiService.generateExercise(topic, level, type);
+  const exercise = await aiService.generateExercise(topic, level, type, history);
   res.json(exercise);
 });
 

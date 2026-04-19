@@ -7,18 +7,31 @@ import { Input } from '../components/ui/Input';
 import { api } from '../api';
 import { useStore } from '../store/useStore';
 
-const RoadmapGraph = ({ roadmap }) => {
+const RoadmapGraph = ({ roadmap, subjects = [] }) => {
   const navigate = useNavigate();
   // Dynamic height based on roadmap size
   const height = Math.max(400, 50 + roadmap.length * 100);
   
-  const nodes = roadmap.map((topic, i) => ({
-    id: topic,
-    x: 150,
-    y: 50 + i * 100,
-    title: topic.replace('-', ' ').toUpperCase(),
-    mastery: i === 0 ? 100 : i === 1 ? 40 : 0
-  }));
+  const nodes = roadmap.map((topic, i) => {
+    const subject = subjects.find(s => s.id === topic);
+    const mastery = subject ? subject.masteryScore : 0;
+    const level = subject ? subject.level : 1;
+    
+    const getLevelName = (lvl) => {
+      if (lvl === 1) return 'Beginner';
+      if (lvl === 2) return 'Intermediate';
+      return 'Advanced';
+    };
+
+    return {
+      id: topic,
+      x: 150,
+      y: 50 + i * 100,
+      title: topic.replace('-', ' ').toUpperCase(),
+      mastery,
+      levelName: getLevelName(level)
+    };
+  });
 
   return (
     <div className="relative w-full flex justify-center bg-surface-container-low rounded-2xl border border-outline-variant/10 overflow-hidden" style={{ height: `${height}px` }}>
@@ -57,8 +70,8 @@ const RoadmapGraph = ({ roadmap }) => {
               <text x={node.x + 40} y={node.y + 5} fill="white" className="font-headline font-bold text-sm">
                 {node.title}
               </text>
-              <text x={node.x + 40} y={node.y + 20} fill="#cfc2d7" className="font-body text-xs">
-                Mastery: {node.mastery}%
+              <text x={node.x + 40} y={node.y + 22} fill="#cfc2d7" className="font-body text-xs">
+                {node.levelName} • Mastery: <tspan fill="#47d6ff" fontWeight="bold">{node.mastery}%</tspan>
               </text>
             </g>
           );
@@ -110,7 +123,7 @@ export const Dashboard = () => {
                 Personalized Roadmap
               </h2>
             </div>
-            <RoadmapGraph roadmap={profile.currentRoadmap} />
+            <RoadmapGraph roadmap={profile.currentRoadmap} subjects={profile.subjects} />
           </Card>
 
           <Card>

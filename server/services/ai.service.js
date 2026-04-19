@@ -11,11 +11,12 @@ const exerciseCache = new Map();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 export const aiService = {
-  async generateExercise(topic, level, type) {
+  async generateExercise(topic, level, type, history = []) {
     const cacheKey = `${topic}-${level}-${type}`;
     const cached = exerciseCache.get(cacheKey);
     
-    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    // Bypass cache if we need a unique question based on history
+    if (cached && (Date.now() - cached.timestamp < CACHE_TTL) && history.length === 0) {
       return cached.data;
     }
 
@@ -41,61 +42,87 @@ export const aiService = {
     } catch (error) {
       console.error('Error generating exercise, using smart fallback.');
       const t = topic.toLowerCase();
-      let q = `What is the primary significance of ${topic.replace('-', ' ')} in modern science?`;
-      let hint = `Consider the fundamental laws governing ${topic.replace('-', ' ')}.`;
-      let options = undefined;
-      let correct = 'It describes the fundamental nature of the system.';
       
-      if (t.includes('quantum') || t.includes('particle') || t.includes('wave')) {
-        q = type === 'MCQ' 
-          ? "Which of the following best describes the principle of Wave-Particle Duality?"
-          : "Explain how observation affects a quantum system according to the Copenhagen interpretation.";
-        hint = "Think about Thomas Young's double-slit experiment.";
-        if (type === 'MCQ') {
-          options = [
-            "Particles only behave as waves when observed.",
-            "Light and matter exhibit properties of both waves and particles.",
-            "Energy is continuous and never quantized.",
-            "Electrons orbit the nucleus in fixed, predictable paths."
-          ];
-          correct = options[1];
-        } else {
-          correct = "Observation causes the wave function to collapse into a definite state.";
+      // Define a structure: level -> type -> array of possible questions
+      const db = {
+        quantum: {
+          1: [
+            { q: "What is a basic particle of light called?", options: ["Photon", "Electron", "Proton", "Neutron"], hint: "It starts with P and carries electromagnetic force." },
+            { q: "Which property does wave-particle duality describe?", options: ["Light and matter can act as both waves and particles.", "Only waves exist.", "Particles only have mass.", "Light is strictly a wave."], hint: "Think about the word 'duality'." }
+          ],
+          2: [
+            { q: "Explain the Heisenberg Uncertainty Principle in simple terms.", hint: "It deals with knowing both the position and momentum of a particle." },
+            { q: "What does it mean for energy to be 'quantized'?", hint: "Think about stepping up stairs instead of walking up a ramp." }
+          ],
+          3: [
+            { q: "Describe how quantum entanglement violates local realism.", hint: "Consider Bell's theorem and instantaneous state collapse across distances." },
+            { q: "Explain the mathematical significance of the wave function collapse in the Copenhagen interpretation.", hint: "Focus on the transition from a superposition of states to a single eigenstate." }
+          ]
+        },
+        relativity: {
+          1: [
+            { q: "Who developed the theory of relativity?", options: ["Isaac Newton", "Albert Einstein", "Niels Bohr", "Galileo Galilei"], hint: "He is famous for the equation E=mc^2." },
+            { q: "What does the 'c' stand for in E=mc^2?", options: ["Speed of light", "Energy", "Mass", "Acceleration"], hint: "It's the fastest speed possible in the universe." }
+          ],
+          2: [
+            { q: "What is time dilation?", hint: "Think about how time passes for someone traveling close to the speed of light compared to someone at rest." },
+            { q: "Explain how gravity is viewed in General Relativity.", hint: "It's not just a pull, but a warping of something." }
+          ],
+          3: [
+            { q: "How does the equivalence principle link accelerating reference frames to gravitational fields?", hint: "Imagine being in a closed box accelerating upwards." },
+            { q: "Explain the concept of a geodesic in curved spacetime.", hint: "It's the generalization of a straight line in curved space." }
+          ]
+        },
+        algebra: {
+          1: [
+            { q: "What is the value of x in 2x + 4 = 10?", options: ["3", "2", "4", "6"], hint: "Subtract 4 from both sides first." },
+            { q: "What does a linear equation look like on a graph?", options: ["A straight line", "A curve", "A circle", "A parabola"], hint: "The name gives it away." }
+          ],
+          2: [
+            { q: "Explain what a matrix is used for in linear algebra.", hint: "Think about systems of equations and transformations." },
+            { q: "What does the determinant of a 2x2 matrix tell us geometrically?", hint: "It relates to the area scaling factor of a linear transformation." }
+          ],
+          3: [
+            { q: "Describe the relationship between eigenvalues and matrix diagonalizability.", hint: "Think about the basis of eigenvectors." },
+            { q: "Explain how Singular Value Decomposition (SVD) generalizes the eigendecomposition.", hint: "Consider non-square matrices and orthonormal bases." }
+          ]
         }
-      } else if (t.includes('relativity') || t.includes('gravity') || t.includes('space')) {
-        q = type === 'MCQ'
-          ? "According to General Relativity, what causes gravity?"
-          : "Describe the relationship between mass and energy as proposed by Einstein.";
-        hint = "It's not just a pulling force; it has to do with the fabric of space itself.";
-        if (type === 'MCQ') {
-          options = [
-            "The electromagnetic attraction between massive objects.",
-            "The curvature of spacetime caused by mass and energy.",
-            "The rapid expansion of the universe.",
-            "Quantum entanglement of gravitons."
-          ];
-          correct = options[1];
-        } else {
-          correct = "Mass and energy are interchangeable, expressed by E=mc^2.";
-        }
-      } else if (t.includes('algebra') || t.includes('math')) {
-        q = type === 'MCQ' 
-          ? "What is the determinant of a 2x2 matrix with rows [a, b] and [c, d]?"
-          : "Explain the geometric meaning of an eigenvector.";
-        hint = type === 'MCQ' ? "Multiply the diagonals and subtract." : "Think about transformations that don't change direction.";
-        if (type === 'MCQ') {
-          options = ["a*b - c*d", "a*d - b*c", "a*c - b*d", "a+d - b+c"];
-          correct = options[1];
-        } else {
-          correct = "An eigenvector's direction remains unchanged when a linear transformation is applied.";
-        }
+      };
+
+      let category = 'quantum';
+      if (t.includes('relativity') || t.includes('gravity') || t.includes('space')) category = 'relativity';
+      if (t.includes('algebra') || t.includes('math')) category = 'algebra';
+
+      // Pick question based on level. If level > 3, use 3. If missing, use 1.
+      const safeLevel = level > 3 ? 3 : (level < 1 ? 1 : level);
+      
+      let possibleQuestions = db[category][safeLevel];
+      
+      // Try to filter by type if MCQ or open-ended requested (best effort)
+      if (type === 'MCQ') {
+        const mcqs = possibleQuestions.filter(p => p.options);
+        if (mcqs.length > 0) possibleQuestions = mcqs;
+      } else {
+        const opens = possibleQuestions.filter(p => !p.options);
+        if (opens.length > 0) possibleQuestions = opens;
       }
 
+      // Filter out questions already in history
+      let unaskedQuestions = possibleQuestions.filter(p => !history.includes(p.q));
+      
+      // If we ran out of unique questions for this level, just pick any from the possible ones
+      if (unaskedQuestions.length === 0) {
+        unaskedQuestions = possibleQuestions;
+      }
+
+      // Randomly pick one
+      const selected = unaskedQuestions[Math.floor(Math.random() * unaskedQuestions.length)];
+
       return {
-        question: q,
-        options: options,
-        correctAnswer: correct,
-        hint: hint
+        question: selected.q,
+        options: selected.options,
+        correctAnswer: selected.options ? selected.options[0] : "AI graded concept.",
+        hint: selected.hint
       };
     }
   },

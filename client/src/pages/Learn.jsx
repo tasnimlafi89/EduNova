@@ -14,9 +14,11 @@ export const Learn = () => {
   const [evaluating, setEvaluating] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [level, setLevel] = useState(1);
+  const [askedQuestions, setAskedQuestions] = useState([]);
   
   // Session tracking
-  const MAX_QUESTIONS = 3;
+  // Beginner: 3, Intermediate: 5, Advanced: 7
+  const MAX_QUESTIONS = level === 1 ? 3 : level === 2 ? 5 : 7;
   const [sessionCount, setSessionCount] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [sessionResult, setSessionResult] = useState(null);
@@ -32,11 +34,12 @@ export const Learn = () => {
     const subject = profile.subjects.find(s => s.id === topicId);
     const currentLevel = subject ? subject.level : 1;
     setLevel(currentLevel);
-    await loadExercise(currentLevel);
+    await loadExercise(currentLevel, []);
   };
 
-  const loadExercise = async (lvl = level) => {
-    if (sessionCount >= MAX_QUESTIONS) return;
+  const loadExercise = async (lvl = level, currentHistory = askedQuestions) => {
+    const targetMax = lvl === 1 ? 3 : lvl === 2 ? 5 : 7;
+    if (sessionCount >= targetMax) return;
     
     setLoading(true);
     setEvaluation(null);
@@ -47,8 +50,9 @@ export const Learn = () => {
     const types = ['open-ended', 'MCQ'];
     const type = types[Math.floor(Math.random() * types.length)];
     
-    const data = await api.generateExercise(topicId, lvl, type);
+    const data = await api.generateExercise(topicId, lvl, type, currentHistory);
     setExercise(data);
+    setAskedQuestions([...currentHistory, data.question]);
     setLoading(false);
   };
 
