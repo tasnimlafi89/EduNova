@@ -64,32 +64,59 @@ app.post('/api/exercises/generate', async (req, res) => {
 });
 
 app.post('/api/exercises/evaluate', async (req, res) => {
-  const { question, studentAnswer, topic, level, studentId } = req.body;
+  const { question, studentAnswer, topic, level } = req.body;
   if (!question || !studentAnswer) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
   const evaluation = await aiService.evaluateAnswer(question, studentAnswer, topic, level);
+  res.json(evaluation);
+});
+
+app.post('/api/student/:id/session/complete', (req, res) => {
+  const { topic, correctCount, totalQuestions } = req.body;
+  const profile = mockProfiles[req.params.id] || mockProfiles['user-1'];
   
-  // Track progress
-  if (studentId && mockProfiles[studentId]) {
-    const profile = mockProfiles[studentId];
-    let subject = profile.subjects.find(s => s.id === topic);
-    if (!subject) {
-      subject = { id: topic, name: topic.replace('-', ' ').toUpperCase(), level: 1, masteryScore: 0 };
-      profile.subjects.push(subject);
-    }
-    
-    // Update mastery score if correct
-    if (evaluation.isCorrect) {
-      subject.masteryScore = Math.min(100, subject.masteryScore + 10);
-      if (subject.masteryScore === 100) {
-        subject.level = Math.min(5, subject.level + 1); // Max level 5
-      }
+  let subject = profile.subjects.find(s => s.id === topic);
+  if (!subject) {
+    subject = { id: topic, name: topic.replace('-', ' ').toUpperCase(), level: 1, masteryScore: 0 };
+    profile.subjects.push(subject);
+  }
+
+  const sessionPercentage = (correctCount / totalQuestions) * 100;
+  // Add 40% of the session score to mastery so users can level up after a few good sessions
+  const masteryGained = Math.round(sessionPercentage * 0.4); 
+  
+  subject.masteryScore += masteryGained;
+
+  let leveledUp = false;
+  let oldLevel = subject.level;
+  let newLevel = subject.level;
+
+  if (subject.masteryScore >= 100) {
+    if (subject.level < 3) {
+      subject.masteryScore = 0;
+      subject.level += 1;
+      leveledUp = true;
+      newLevel = subject.level;
+    } else {
+      subject.masteryScore = 100; // maxed out at Advanced 100%
     }
   }
 
-  res.json(evaluation);
+  const getLevelName = (lvl) => {
+    if (lvl === 1) return 'Beginner';
+    if (lvl === 2) return 'Intermediate';
+    return 'Advanced';
+  };
+
+  res.json({
+    success: true,
+    masteryScore: subject.masteryScore,
+    leveledUp,
+    oldLevelName: getLevelName(oldLevel),
+    newLevelName: getLevelName(newLevel)
+  });
 });
 
 // AI Chat

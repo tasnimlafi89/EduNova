@@ -39,6 +39,14 @@ export const api = {
     return res.json();
   },
 
+  completeSession: async (studentId, topic, correctCount, totalQuestions) => {
+    const res = await fetch(`${API_URL}/student/${studentId}/session/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic, correctCount, totalQuestions })
+    });
+    return res.json();
+  },
   chatMessage: async (message, context, history) => {
     const res = await fetch(`${API_URL}/chat/message`, {
       method: 'POST',

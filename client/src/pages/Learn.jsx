@@ -13,16 +13,29 @@ export const Learn = () => {
   const [loading, setLoading] = useState(true);
   const [evaluating, setEvaluating] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [level, setLevel] = useState(1);
   
   // Session tracking
   const MAX_QUESTIONS = 3;
   const [sessionCount, setSessionCount] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [sessionResult, setSessionResult] = useState(null);
+  const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
-    loadExercise();
+    loadProfileAndExercise();
   }, [topicId]);
 
-  const loadExercise = async () => {
+  const loadProfileAndExercise = async () => {
+    setLoading(true);
+    const profile = await api.getProfile('user-1');
+    const subject = profile.subjects.find(s => s.id === topicId);
+    const currentLevel = subject ? subject.level : 1;
+    setLevel(currentLevel);
+    await loadExercise(currentLevel);
+  };
+
+  const loadExercise = async (lvl = level) => {
     if (sessionCount >= MAX_QUESTIONS) return;
     
     setLoading(true);
@@ -34,7 +47,7 @@ export const Learn = () => {
     const types = ['open-ended', 'MCQ'];
     const type = types[Math.floor(Math.random() * types.length)];
     
-    const data = await api.generateExercise(topicId, 2, type);
+    const data = await api.generateExercise(topicId, lvl, type);
     setExercise(data);
     setLoading(false);
   };
@@ -43,19 +56,51 @@ export const Learn = () => {
     if (!answer.trim()) return;
     setEvaluating(true);
     
-    // Pass studentId 'user-1' to track progress on backend
-    const data = await api.evaluateAnswer(exercise.question, answer, topicId, 2, 'user-1');
+    const data = await api.evaluateAnswer(exercise.question, answer, topicId, level, 'user-1');
+    if (data.isCorrect) {
+      setCorrectCount(prev => prev + 1);
+    }
     setEvaluation(data);
     setEvaluating(false);
-    setSessionCount(prev => prev + 1);
   };
 
-  if (sessionCount >= MAX_QUESTIONS && !evaluation) {
+  const handleNext = () => {
+    setSessionCount(prev => prev + 1);
+    loadExercise();
+  };
+
+  const handleRetry = () => {
+    setEvaluation(null);
+    // keep answer so they can edit it
+  };
+
+  const handleFinishSession = async () => {
+    setCompleting(true);
+    const count = sessionCount + 1; // plus the one we just finished
+    const result = await api.completeSession('user-1', topicId, correctCount, MAX_QUESTIONS);
+    setSessionResult(result);
+    setCompleting(false);
+  };
+
+  if (sessionResult) {
+    if (sessionResult.leveledUp) {
+      return (
+        <div className="max-w-4xl mx-auto px-8 py-12 w-full text-center mt-20 animate-in zoom-in">
+          <span className="material-symbols-outlined text-8xl text-secondary mb-6 animate-bounce">workspace_premium</span>
+          <h1 className="font-headline text-5xl font-black text-white mb-4 bg-clip-text text-transparent bg-gradient-to-r from-secondary to-primary">Level Up!</h1>
+          <p className="text-on-surface text-xl mb-2">Congratulations!</p>
+          <p className="text-on-surface-variant mb-8">You've mastered this stage and upgraded from <span className="text-white font-bold">{sessionResult.oldLevelName}</span> to <span className="text-secondary font-bold">{sessionResult.newLevelName}</span> in {topicId.replace('-', ' ')}.</p>
+          <Button variant="primary" onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
+        </div>
+      );
+    }
+
     return (
-      <div className="max-w-4xl mx-auto px-8 py-12 w-full text-center mt-20">
+      <div className="max-w-4xl mx-auto px-8 py-12 w-full text-center mt-20 animate-in fade-in">
         <span className="material-symbols-outlined text-6xl text-primary mb-4">task_alt</span>
         <h1 className="font-headline text-4xl font-bold text-white mb-4">Study Session Complete!</h1>
-        <p className="text-on-surface-variant mb-8">You've completed {MAX_QUESTIONS} exercises. Your mastery for this topic has been updated.</p>
+        <p className="text-on-surface-variant mb-2">You scored {correctCount} out of {MAX_QUESTIONS} correct.</p>
+        <p className="text-on-surface-variant mb-8">Your overall mastery for this topic is now <span className="text-secondary font-bold">{sessionResult.masteryScore}%</span>.</p>
         <Button variant="primary" onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
       </div>
     );
@@ -80,7 +125,7 @@ export const Learn = () => {
         </button>
         <div className="flex-1">
           <h1 className="font-headline text-3xl font-bold text-white capitalize">{topicId.replace('-', ' ')}</h1>
-          <p className="text-sm text-secondary font-medium mt-1">Session Progress: {sessionCount + (evaluation ? 0 : 1)} / {MAX_QUESTIONS}</p>
+          <p className="text-sm text-secondary font-medium mt-1">Session Progress: {sessionCount + 1} / {MAX_QUESTIONS}</p>
         </div>
       </div>
 
@@ -88,7 +133,7 @@ export const Learn = () => {
         <Card className="border-t-4 border-t-primary">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-headline text-xl text-white font-bold">Dynamic Exercise</h2>
-            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">Level 2</span>
+            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">Level {level}</span>
           </div>
           <p className="text-on-surface text-lg leading-relaxed mb-6">{exercise.question}</p>
           
@@ -122,7 +167,7 @@ export const Learn = () => {
             )}
             
             {showHint && exercise.hint && (
-              <div className="p-4 bg-tertiary/10 border border-tertiary/30 rounded-xl flex gap-3 text-tertiary">
+              <div className="p-4 bg-tertiary/10 border border-tertiary/30 rounded-xl flex gap-3 text-tertiary animate-in fade-in">
                 <span className="material-symbols-outlined text-sm mt-0.5">lightbulb</span>
                 <p className="text-sm">{exercise.hint}</p>
               </div>
@@ -146,10 +191,10 @@ export const Learn = () => {
         </Card>
 
         {evaluation && (
-          <Card className={`border-l-4 ${!evaluation.isRelevant ? 'border-l-error' : evaluation.score > 70 ? 'border-l-secondary' : 'border-l-tertiary'} bg-surface-container/50 animate-in fade-in slide-in-from-bottom-4`}>
+          <Card className={`border-l-4 ${!evaluation.isRelevant ? 'border-l-error' : evaluation.isCorrect ? 'border-l-secondary' : 'border-l-tertiary'} bg-surface-container/50 animate-in fade-in slide-in-from-bottom-4`}>
             <div className="flex items-start gap-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-black ${
-                !evaluation.isRelevant ? 'bg-error/20 text-error' : evaluation.score > 70 ? 'bg-secondary/20 text-secondary' : 'bg-tertiary/20 text-tertiary'
+                !evaluation.isRelevant ? 'bg-error/20 text-error' : evaluation.isCorrect ? 'bg-secondary/20 text-secondary' : 'bg-tertiary/20 text-tertiary'
               }`}>
                 {!evaluation.isRelevant ? '!' : evaluation.score}
               </div>
@@ -159,16 +204,22 @@ export const Learn = () => {
                 </h3>
                 <p className="text-on-surface-variant text-sm leading-relaxed mb-4">{evaluation.feedback}</p>
                 {evaluation.correction && evaluation.isRelevant && (
-                  <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/20">
+                  <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/20 mb-4">
                     <span className="text-xs text-primary font-bold uppercase block mb-1">Suggested Correction</span>
                     <p className="text-on-surface text-sm">{evaluation.correction}</p>
                   </div>
                 )}
-                <div className="mt-6 flex justify-end">
-                  {sessionCount >= MAX_QUESTIONS ? (
-                    <Button variant="primary" onClick={() => navigate('/dashboard')}>Finish Session</Button>
+                
+                <div className="mt-6 flex justify-end gap-3">
+                  {!evaluation.isCorrect && (
+                    <Button variant="secondary" onClick={handleRetry}>Retry</Button>
+                  )}
+                  {sessionCount + 1 >= MAX_QUESTIONS ? (
+                    <Button variant="primary" onClick={handleFinishSession} disabled={completing}>
+                      {completing ? 'Completing...' : 'Finish Session'}
+                    </Button>
                   ) : (
-                    <Button variant="secondary" onClick={loadExercise}>Next Exercise</Button>
+                    <Button variant={evaluation.isCorrect ? "primary" : "outline"} onClick={handleNext}>Next Exercise</Button>
                   )}
                 </div>
               </div>
