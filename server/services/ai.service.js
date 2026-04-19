@@ -89,14 +89,29 @@ export const aiService = {
         }
       };
 
-      let category = 'quantum';
-      if (t.includes('relativity') || t.includes('gravity') || t.includes('space')) category = 'relativity';
-      if (t.includes('algebra') || t.includes('math')) category = 'algebra';
+      let category = null;
+      if (t.includes('quantum') || t.includes('particle') || t.includes('wave')) category = 'quantum';
+      else if (t.includes('relativity') || t.includes('gravity') || t.includes('space')) category = 'relativity';
+      else if (t.includes('algebra') || t.includes('math')) category = 'algebra';
 
       // Pick question based on level. If level > 3, use 3. If missing, use 1.
       const safeLevel = level > 3 ? 3 : (level < 1 ? 1 : level);
+      const cleanTopic = topic.replace(/-/g, ' ');
       
-      let possibleQuestions = db[category][safeLevel];
+      let possibleQuestions;
+      
+      if (category && db[category]) {
+        possibleQuestions = db[category][safeLevel];
+      } else {
+        // Dynamic fallback for any topic the user typed in!
+        possibleQuestions = [
+          { q: `What is the fundamental definition of ${cleanTopic}?`, options: [`The core study of ${cleanTopic}`, `An unrelated field`, `A mathematical paradox`, `A type of energy`], hint: `Think about what ${cleanTopic} basically means.` },
+          { q: `Explain the most important principle in ${cleanTopic}.`, hint: `Consider why ${cleanTopic} is studied.` },
+          { q: `How does ${cleanTopic} apply to real-world scenarios?`, hint: `Think of a practical use case for ${cleanTopic}.` },
+          { q: `Describe an advanced concept within ${cleanTopic}.`, hint: `Go beyond the basics of ${cleanTopic}.` },
+          { q: `Which of the following is a key element of ${cleanTopic}?`, options: [`Core concept of ${cleanTopic}`, `Quantum entanglement`, `Photosynthesis`, `Linguistic syntax`], hint: `Choose the one that relates directly to ${cleanTopic}.` }
+        ];
+      }
       
       // Try to filter by type if MCQ or open-ended requested (best effort)
       if (type === 'MCQ') {
